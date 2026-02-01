@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
+
 * {
-  cursor: none;
+  cursor: pointer !important;
 }
 
 :root {

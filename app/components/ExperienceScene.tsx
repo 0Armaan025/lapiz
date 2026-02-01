@@ -1,15 +1,26 @@
 "use client";
 import { Canvas } from "@react-three/fiber";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import Scene from "./Scene";
 import { motion } from "framer-motion";
 
+import { redirect } from "next/navigation";
 
 
 export default function ExperienceScene() {
+
+
+  useEffect(() => {
+
+    setTimeout(() => {
+
+      redirect("/create");
+    }, 15000);
+  }, [])
+
   return (
     <motion.div
-      className="fixed inset-0 z-10"
+      className="fixed inset-0 z-10 cursor-none!"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1, zIndex: 99999 }}
       transition={{ duration: 1.2, ease: "easeOut" }}

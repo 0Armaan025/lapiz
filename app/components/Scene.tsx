@@ -37,9 +37,9 @@ function Card({ position, rotation, imageUrl, index }: any) {
       <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.1}>
         {/* Main Card Frame */}
         <mesh castShadow>
-          <planeGeometry args={[1.5, 2]} />
+          <planeGeometry args={[4, 3.5]} />
           <meshPhysicalMaterial
-            map={texture}
+            map={texture as any}
             roughness={0.2}
             metalness={0.1}
             clearcoat={1} // The "Premium" gloss without the lag
@@ -49,8 +49,8 @@ function Card({ position, rotation, imageUrl, index }: any) {
 
         {/* Simple Label */}
         <Text
-          position={[0, -1.2, 0.01]}
-          fontSize={0.1}
+          position={[0, -2, 0.01]}
+          fontSize={0.25}
           color="white"
           font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff"
         >

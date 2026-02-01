@@ -72,7 +72,7 @@ const Home = () => {
   return (
 
     <>
-      <div className="relative min-h-screen overflow-hidden bg-black">
+      <div className="relative min-h-screen overflow-hidden bg-black cursor-none">
         <motion.div
           className="relative z-20 min-h-screen flex flex-col justify-center items-center w-full text-center"
           initial={{ opacity: 0, y: 24 }}

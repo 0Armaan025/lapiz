@@ -31,7 +31,6 @@ export default function RootLayout({
 
         <div className="min-h-screen bg-black">
 
-          <CustomCursor />
           {children}
         </div>
       </body>
