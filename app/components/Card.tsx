@@ -1,3 +1,5 @@
+
+
 import { Rnd } from "react-rnd";
 import { CardElement, CardSettings } from "../create/page";
 
@@ -18,10 +20,12 @@ const Card: React.FC<CardProps> = ({
   settings,
 }) => {
   return (
-    <div className="flex-1 mx-4 my-4">
+    <div className="flex-1 mx-4 my-4 flex items-center justify-center">
       <div
-        className="card relative min-h-[600px] rounded-xl p-4"
+        className="card relative rounded-xl"
         style={{
+          width: `${settings.width}px`,
+          height: `${settings.height}px`,
           backgroundColor: settings.backgroundColor,
           backgroundImage: settings.backgroundImage,
           backgroundSize: "cover",
@@ -58,7 +62,10 @@ const Card: React.FC<CardProps> = ({
                 cursor: "move",
                 backgroundColor: isSelected ? "rgba(59, 130, 246, 0.05)" : "transparent",
               }}
-              onClick={() => onSelectElement(el.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectElement(el.id);
+              }}
               resizeHandleStyles={{
                 bottom: {
                   bottom: "-5px",
@@ -130,7 +137,7 @@ const Card: React.FC<CardProps> = ({
                 },
               }}
             >
-              <div style={{ width: "100%", height: "100%", padding: "4px" }}>
+              <div style={{ width: "100%", height: "100%", padding: "4px", pointerEvents: "none" }}>
                 {/* Text Element */}
                 {el.type === "text" && (
                   <div
@@ -145,10 +152,11 @@ const Card: React.FC<CardProps> = ({
                       overflow: "hidden",
                       display: "flex",
                       alignItems: "center",
+                      wordBreak: "break-word",
                     }}
                   >
                     {el.githubStat && el.githubStat !== "none"
-                      ? el.githubStat
+                      ? el.content || el.githubStat
                       : el.content}
                   </div>
                 )}
@@ -197,7 +205,6 @@ const Card: React.FC<CardProps> = ({
                           background: el.fillColor,
                           border: `${el.strokeWidth}px solid ${el.strokeColor}`,
                           borderRadius: "8px",
-                          aspectRatio: "1/1",
                         }}
                       />
                     )}
@@ -530,7 +537,7 @@ const Card: React.FC<CardProps> = ({
         })}
 
         {elements.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <p className="text-zinc-500 text-lg">
               Click a component on the left to get started
             </p>

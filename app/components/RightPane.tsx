@@ -1,3 +1,6 @@
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 "use client";
 import { useState, useRef } from "react";
 import { CardElement, CardSettings } from "../create/page";
@@ -6,8 +9,10 @@ interface RightPaneProps {
   selectedElement: CardElement | undefined;
   onUpdateElement: (id: number, data: Partial<CardElement>) => void;
   onDeleteElement: () => void;
+  onDuplicateElement: () => void;
   cardSettings: CardSettings;
   onUpdateCardSettings: (settings: Partial<CardSettings>) => void;
+  githubUsername: string;
 }
 
 const GITHUB_STATS = [
@@ -16,13 +21,10 @@ const GITHUB_STATS = [
   "Total Commits",
   "Total PRs",
   "Total Issues",
-  "Contributed to (last year)",
+  "Contributed to",
   "Public Repositories",
   "Followers",
   "Following",
-  "Total Contributions",
-  "Longest Streak",
-  "Current Streak",
 ];
 
 const COLOR_THEMES = {
@@ -64,10 +66,12 @@ const RightPane: React.FC<RightPaneProps> = ({
   selectedElement,
   onUpdateElement,
   onDeleteElement,
+  onDuplicateElement,
   cardSettings,
   onUpdateCardSettings,
+  githubUsername,
 }) => {
-  const [width, setWidth] = useState(360);
+  const [width, setWidth] = useState(380);
   const [activeTab, setActiveTab] = useState<"element" | "card">("element");
   const isResizing = useRef(false);
 
@@ -80,7 +84,7 @@ const RightPane: React.FC<RightPaneProps> = ({
   const resize = (e: MouseEvent) => {
     if (!isResizing.current) return;
     const newWidth = window.innerWidth - e.clientX;
-    if (newWidth > 200 && newWidth < 700) {
+    if (newWidth > 280 && newWidth < 700) {
       setWidth(newWidth);
     }
   };
@@ -185,11 +189,14 @@ const RightPane: React.FC<RightPaneProps> = ({
   };
 
   return (
-    <div className="flex min-h-screen ml-8">
-      <div onMouseDown={startResize} className="w-1 cursor-col-resize transition" />
-      <div style={{ width }} className="bg-zinc-900/50 ml-2 rounded-l-xl p-4 overflow-y-auto">
+    <div className="flex min-h-screen ml-8" suppressHydrationWarning>
+      <div
+        onMouseDown={startResize}
+        className="w-2 cursor-col-resize transition bg-zinc-700/50 hover:bg-blue-500"
+      />
+      <div style={{ width }} className="bg-zinc-900/50 ml-2 rounded-l-xl p-4 overflow-y-auto max-h-screen">
         {/* Tab Switcher */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 sticky top-0 bg-zinc-900/95 z-10 pb-2">
           <button
             onClick={() => setActiveTab("element")}
             className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${activeTab === "element"
@@ -218,6 +225,30 @@ const RightPane: React.FC<RightPaneProps> = ({
             </h3>
 
             <div className="bg-zinc-800/50 rounded-lg p-3">
+              <h4 className="text-sm text-zinc-300 font-semibold mb-3">Card Size</h4>
+
+              <div className="grid grid-cols-2 gap-2">
+                <PropertyInput
+                  label="Width"
+                  value={cardSettings.width || 800}
+                  onChange={(val) => handleCardSettingChange("width", val)}
+                  type="number"
+                  min={400}
+                  max={2000}
+                />
+
+                <PropertyInput
+                  label="Height"
+                  value={cardSettings.height || 600}
+                  onChange={(val) => handleCardSettingChange("height", val)}
+                  type="number"
+                  min={300}
+                  max={1500}
+                />
+              </div>
+            </div>
+
+            <div className="bg-zinc-800/50 rounded-lg p-3">
               <h4 className="text-sm text-zinc-300 font-semibold mb-3">Background</h4>
 
               <PropertyInput
@@ -234,7 +265,7 @@ const RightPane: React.FC<RightPaneProps> = ({
                     <button
                       key={idx}
                       onClick={() => handleCardSettingChange("backgroundColor", bg)}
-                      className="aspect-square rounded-lg border-2 border-zinc-700 hover:border-zinc-400"
+                      className="aspect-square rounded-lg border-2 border-zinc-700 hover:border-zinc-400 transition-all"
                       style={{ background: bg }}
                     />
                   ))}
@@ -308,18 +339,43 @@ const RightPane: React.FC<RightPaneProps> = ({
             </h3>
 
             {!selectedElement ? (
-              <p className="text-zinc-500 text-sm">Select an element to edit properties</p>
+              <div className="text-center py-8">
+                <p className="text-zinc-500 text-sm mb-4">Select an element to edit properties</p>
+                {!githubUsername && (
+                  <p className="text-zinc-600 text-xs">
+                    💡 Tip: Set your GitHub username at the top to auto-populate stats!
+                  </p>
+                )}
+              </div>
             ) : (
               <div className="flex flex-col gap-4">
-                {/* Element Type */}
+                {/* Element Type & Actions */}
                 <div className="bg-zinc-800/50 rounded-lg p-3">
-                  <label className="text-xs text-zinc-400 uppercase tracking-wide block mb-1">
+                  <label className="text-xs text-zinc-400 uppercase tracking-wide block mb-2">
                     Type
                   </label>
-                  <p className="text-white font-medium capitalize">{selectedElement.type}</p>
+                  <p className="text-white font-medium capitalize mb-3">{selectedElement.type}</p>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={onDuplicateElement}
+                      className="flex-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 py-2 px-3 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      📋 Duplicate
+                    </button>
+                  </div>
                 </div>
 
-                {/* Color Theme Presets - Show for applicable types */}
+                {/* GitHub Username Notice */}
+                {(selectedElement.type === "text" || selectedElement.type === "statsCard" || selectedElement.type === "languageBar" || selectedElement.type === "contributionGraph") && !githubUsername && (
+                  <div className="bg-yellow-600/10 border border-yellow-600/30 rounded-lg p-3">
+                    <p className="text-yellow-400 text-xs">
+                      ⚠️ Set your GitHub username at the top to fetch real stats
+                    </p>
+                  </div>
+                )}
+
+                {/* Color Theme Presets */}
                 {["text", "shape", "badge", "trophy", "table", "statsCard", "progressBar"].includes(selectedElement.type) && (
                   <div className="bg-zinc-800/50 rounded-lg p-3">
                     <h4 className="text-sm text-zinc-300 font-semibold mb-3">🎨 Color Themes</h4>
@@ -343,21 +399,21 @@ const RightPane: React.FC<RightPaneProps> = ({
                   </div>
                 )}
 
-                {/* Position & Size - Universal */}
+                {/* Position & Size */}
                 <div className="bg-zinc-800/50 rounded-lg p-3">
                   <h4 className="text-sm text-zinc-300 font-semibold mb-3">Position & Size</h4>
 
                   <div className="grid grid-cols-2 gap-2">
                     <PropertyInput
                       label="X"
-                      value={selectedElement.x}
+                      value={Math.round(selectedElement.x)}
                       onChange={(val) => handleChange("x", val)}
                       type="number"
                     />
 
                     <PropertyInput
                       label="Y"
-                      value={selectedElement.y}
+                      value={Math.round(selectedElement.y)}
                       onChange={(val) => handleChange("y", val)}
                       type="number"
                     />
@@ -366,7 +422,7 @@ const RightPane: React.FC<RightPaneProps> = ({
                   <div className="grid grid-cols-2 gap-2">
                     <PropertyInput
                       label="Width"
-                      value={selectedElement.width}
+                      value={Math.round(selectedElement.width)}
                       onChange={(val) => handleChange("width", val)}
                       type="number"
                       min={10}
@@ -374,7 +430,7 @@ const RightPane: React.FC<RightPaneProps> = ({
 
                     <PropertyInput
                       label="Height"
-                      value={selectedElement.height}
+                      value={Math.round(selectedElement.height)}
                       onChange={(val) => handleChange("height", val)}
                       type="number"
                       min={10}
@@ -391,11 +447,11 @@ const RightPane: React.FC<RightPaneProps> = ({
                   />
                 </div>
 
-                {/* Text Properties */}
+                {/* TEXT PROPERTIES */}
                 {selectedElement.type === "text" && (
                   <>
                     <div className="bg-zinc-800/50 rounded-lg p-3">
-                      <h4 className="text-sm text-zinc-300 font-semibold mb-3">Text Content</h4>
+                      <h4 className="text-sm text-zinc-300 font-semibold mb-3">Content</h4>
 
                       <PropertySelect
                         label="GitHub Stat"
@@ -406,7 +462,7 @@ const RightPane: React.FC<RightPaneProps> = ({
 
                       {selectedElement.githubStat === "none" && (
                         <PropertyInput
-                          label="Content"
+                          label="Text Content"
                           value={selectedElement.content || ""}
                           onChange={(val) => handleChange("content", val)}
                           type="text"
@@ -430,7 +486,7 @@ const RightPane: React.FC<RightPaneProps> = ({
                         label="Font Family"
                         value={selectedElement.fontFamily || "Arial"}
                         onChange={(val) => handleChange("fontFamily", val)}
-                        options={["Arial", "Helvetica", "Times New Roman", "Courier New", "Georgia", "Verdana", "Roboto", "Open Sans", "Montserrat"]}
+                        options={["Arial", "Helvetica", "Times New Roman", "Courier New", "Georgia", "Verdana", "Roboto", "Open Sans", "Montserrat", "Inter", "Poppins"]}
                       />
 
                       <PropertySelect
@@ -457,52 +513,331 @@ const RightPane: React.FC<RightPaneProps> = ({
                   </>
                 )}
 
-                {/* Icon Properties */}
-                {selectedElement.type === "icon" && (
+                {/* IMAGE PROPERTIES */}
+                {selectedElement.type === "image" && (
+                  <>
+                    <div className="bg-zinc-800/50 rounded-lg p-3">
+                      <h4 className="text-sm text-zinc-300 font-semibold mb-3">Image Source</h4>
+
+                      <PropertySelect
+                        label="Image Type"
+                        value={selectedElement.imageType || "custom"}
+                        onChange={(val) => {
+                          handleChange("imageType", val);
+                          if (val === "github-profile" && githubUsername) {
+                            handleChange("src", `https://github.com/${githubUsername}.png`);
+                          }
+                        }}
+                        options={["custom", "github-profile"]}
+                      />
+
+                      {selectedElement.imageType === "custom" ? (
+                        <>
+                          <PropertyInput
+                            label="Image URL"
+                            value={selectedElement.src || ""}
+                            onChange={(val) => handleChange("src", val)}
+                            type="text"
+                          />
+
+                          {selectedElement.src && (
+                            <div className="mt-2">
+                              <label className="text-xs text-zinc-400 block mb-1">Preview</label>
+                              <div className="w-full h-32 rounded-lg border border-zinc-700 overflow-hidden bg-zinc-900 flex items-center justify-center">
+                                <img
+                                  src={selectedElement.src}
+                                  alt="Preview"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "https://via.placeholder.com/150?text=Invalid+URL";
+                                  }}
+                                  className="max-w-full max-h-full object-contain"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {githubUsername ? (
+                            <div className="mt-2">
+                              <label className="text-xs text-zinc-400 block mb-1">Preview</label>
+                              <div className="w-full h-32 rounded-lg border border-zinc-700 overflow-hidden bg-zinc-900 flex items-center justify-center">
+                                <img
+                                  src={`https://github.com/${githubUsername}.png`}
+                                  alt="GitHub Profile"
+                                  className="w-24 h-24 rounded-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "https://via.placeholder.com/150?text=User+Not+Found";
+                                  }}
+                                />
+                              </div>
+                              <p className="text-xs text-zinc-500 mt-2">Using: {githubUsername}</p>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-yellow-400 mt-2">
+                              Set GitHub username at the top to use profile image
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    <div className="bg-zinc-800/50 rounded-lg p-3">
+                      <h4 className="text-sm text-zinc-300 font-semibold mb-3">Image Styling</h4>
+
+                      <PropertyInput
+                        label="Opacity"
+                        value={selectedElement.opacity || 1}
+                        onChange={(val) => handleChange("opacity", val)}
+                        type="number"
+                        min={0}
+                        max={1}
+                        step={0.1}
+                      />
+
+                      <PropertyInput
+                        label="Border Radius"
+                        value={selectedElement.borderRadius || 0}
+                        onChange={(val) => handleChange("borderRadius", val)}
+                        type="number"
+                        min={0}
+                        max={200}
+                      />
+
+                      <PropertySelect
+                        label="Border Style"
+                        value={selectedElement.borderStyle || "none"}
+                        onChange={(val) => handleChange("borderStyle", val)}
+                        options={["none", "solid", "dashed", "dotted", "double"]}
+                      />
+
+                      {selectedElement.borderStyle && selectedElement.borderStyle !== "none" && (
+                        <>
+                          <PropertyInput
+                            label="Border Width"
+                            value={selectedElement.borderWidth || 2}
+                            onChange={(val) => handleChange("borderWidth", val)}
+                            type="number"
+                            min={1}
+                            max={20}
+                          />
+
+                          <PropertyInput
+                            label="Border Color"
+                            value={selectedElement.borderColor || "#3b82f6"}
+                            onChange={(val) => handleChange("borderColor", val)}
+                            type="color"
+                          />
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* SHAPE PROPERTIES */}
+                {selectedElement.type === "shape" && (
+                  <>
+                    <div className="bg-zinc-800/50 rounded-lg p-3">
+                      <h4 className="text-sm text-zinc-300 font-semibold mb-3">Shape Type</h4>
+
+                      <PropertySelect
+                        label="Shape"
+                        value={selectedElement.shapeType || "rectangle"}
+                        onChange={(val) => handleChange("shapeType", val)}
+                        options={["square", "rectangle", "circle", "triangle", "divider"]}
+                      />
+                    </div>
+
+                    <div className="bg-zinc-800/50 rounded-lg p-3">
+                      <h4 className="text-sm text-zinc-300 font-semibold mb-3">Shape Colors</h4>
+
+                      <PropertyInput
+                        label="Fill Color"
+                        value={selectedElement.fillColor || "#3b82f6"}
+                        onChange={(val) => handleChange("fillColor", val)}
+                        type="color"
+                      />
+
+                      <div className="mt-2 mb-3">
+                        <label className="text-xs text-zinc-400 block mb-2">Gradient Fills</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {GRADIENT_PRESETS.map((gradient, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => handleChange("fillColor", gradient)}
+                              className="h-12 rounded-lg border-2 border-zinc-700 hover:border-zinc-400 hover:scale-105 transition-transform"
+                              style={{ background: gradient }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <PropertyInput
+                        label="Stroke Color"
+                        value={selectedElement.strokeColor || "#1e40af"}
+                        onChange={(val) => handleChange("strokeColor", val)}
+                        type="color"
+                      />
+
+                      <PropertyInput
+                        label="Stroke Width"
+                        value={selectedElement.strokeWidth || 2}
+                        onChange={(val) => handleChange("strokeWidth", val)}
+                        type="number"
+                        min={0}
+                        max={20}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* TROPHY PROPERTIES */}
+                {selectedElement.type === "trophy" && (
                   <div className="bg-zinc-800/50 rounded-lg p-3">
-                    <h4 className="text-sm text-zinc-300 font-semibold mb-3">Icon Properties</h4>
+                    <h4 className="text-sm text-zinc-300 font-semibold mb-3">Trophy Properties</h4>
 
-                    <PropertyInput
-                      label="Icon/Emoji"
-                      value={selectedElement.content || "⭐"}
-                      onChange={(val) => handleChange("content", val)}
-                      type="text"
+                    <PropertySelect
+                      label="Trophy Type"
+                      value={selectedElement.trophyType || "gold"}
+                      onChange={(val) => {
+                        handleChange("trophyType", val);
+                        if (val === "gold") handleChange("trophyColor", "#FFD700");
+                        if (val === "silver") handleChange("trophyColor", "#C0C0C0");
+                        if (val === "bronze") handleChange("trophyColor", "#CD7F32");
+                      }}
+                      options={["gold", "silver", "bronze", "platinum", "custom"]}
                     />
 
                     <PropertyInput
-                      label="Size"
-                      value={selectedElement.fontSize || 48}
-                      onChange={(val) => handleChange("fontSize", val)}
-                      type="number"
-                      min={16}
-                      max={200}
-                    />
-
-                    <PropertyInput
-                      label="Color"
-                      value={selectedElement.color || "#FFD700"}
-                      onChange={(val) => handleChange("color", val)}
+                      label="Trophy Color"
+                      value={selectedElement.trophyColor || "#FFD700"}
+                      onChange={(val) => handleChange("trophyColor", val)}
                       type="color"
                     />
-
-                    <div className="mt-2">
-                      <label className="text-xs text-zinc-400 block mb-2">Popular Icons</label>
-                      <div className="grid grid-cols-6 gap-2">
-                        {["⭐", "🏆", "💎", "🔥", "⚡", "💻", "🎯", "🚀", "💡", "🎨", "📊", "🎉"].map((icon) => (
-                          <button
-                            key={icon}
-                            onClick={() => handleChange("content", icon)}
-                            className="aspect-square rounded-lg border-2 border-zinc-700 hover:border-zinc-400 text-2xl flex items-center justify-center"
-                          >
-                            {icon}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 )}
 
-                {/* Stats Card Properties */}
+                {/* BADGE PROPERTIES */}
+                {selectedElement.type === "badge" && (
+                  <>
+                    <div className="bg-zinc-800/50 rounded-lg p-3">
+                      <h4 className="text-sm text-zinc-300 font-semibold mb-3">Badge Content</h4>
+
+                      <PropertyInput
+                        label="Badge Text"
+                        value={selectedElement.badgeText || ""}
+                        onChange={(val) => handleChange("badgeText", val)}
+                        type="text"
+                      />
+
+                      <PropertyInput
+                        label="Font Size"
+                        value={selectedElement.fontSize || 14}
+                        onChange={(val) => handleChange("fontSize", val)}
+                        type="number"
+                        min={8}
+                        max={48}
+                      />
+
+                      <PropertySelect
+                        label="Font Weight"
+                        value={selectedElement.fontWeight || "bold"}
+                        onChange={(val) => handleChange("fontWeight", val)}
+                        options={["normal", "500", "600", "bold", "800", "900"]}
+                      />
+                    </div>
+
+                    <div className="bg-zinc-800/50 rounded-lg p-3">
+                      <h4 className="text-sm text-zinc-300 font-semibold mb-3">Badge Colors</h4>
+
+                      <PropertyInput
+                        label="Background"
+                        value={selectedElement.badgeColor || "#3b82f6"}
+                        onChange={(val) => handleChange("badgeColor", val)}
+                        type="color"
+                      />
+
+                      <PropertyInput
+                        label="Text Color"
+                        value={selectedElement.badgeTextColor || "#ffffff"}
+                        onChange={(val) => handleChange("badgeTextColor", val)}
+                        type="color"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* TABLE PROPERTIES */}
+                {selectedElement.type === "table" && (
+                  <>
+                    <div className="bg-zinc-800/50 rounded-lg p-3">
+                      <h4 className="text-sm text-zinc-300 font-semibold mb-3">Table Structure</h4>
+
+                      <div className="flex gap-2 mb-3">
+                        <button
+                          onClick={addTableRow}
+                          className="flex-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          + Row
+                        </button>
+                        <button
+                          onClick={addTableColumn}
+                          className="flex-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          + Column
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="bg-zinc-800/50 rounded-lg p-3">
+                      <h4 className="text-sm text-zinc-300 font-semibold mb-3">Table Colors</h4>
+
+                      <PropertyInput
+                        label="Header Background"
+                        value={selectedElement.headerBgColor || "#3b82f6"}
+                        onChange={(val) => handleChange("headerBgColor", val)}
+                        type="color"
+                      />
+
+                      <PropertyInput
+                        label="Cell Background"
+                        value={selectedElement.cellBgColor || "#27272a"}
+                        onChange={(val) => handleChange("cellBgColor", val)}
+                        type="color"
+                      />
+
+                      <PropertyInput
+                        label="Text Color"
+                        value={selectedElement.color || "#ffffff"}
+                        onChange={(val) => handleChange("color", val)}
+                        type="color"
+                      />
+                    </div>
+
+                    <div className="bg-zinc-800/50 rounded-lg p-3 max-h-64 overflow-y-auto">
+                      <h4 className="text-sm text-zinc-300 font-semibold mb-3">Table Data</h4>
+                      {selectedElement.tableData?.map((row, rowIdx) => (
+                        <div key={rowIdx} className="mb-2">
+                          <p className="text-xs text-zinc-500 mb-1">
+                            {rowIdx === 0 ? "Header" : `Row ${rowIdx}`}
+                          </p>
+                          {row.map((cell, colIdx) => (
+                            <input
+                              key={colIdx}
+                              type="text"
+                              value={cell}
+                              onChange={(e) => handleTableDataChange(rowIdx, colIdx, e.target.value)}
+                              className="w-full bg-zinc-700/50 text-white px-2 py-1 rounded text-xs mb-1 border border-zinc-600 focus:border-blue-500 focus:outline-none"
+                              placeholder={`Cell ${colIdx + 1}`}
+                            />
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* STATS CARD PROPERTIES */}
                 {selectedElement.type === "statsCard" && (
                   <div className="bg-zinc-800/50 rounded-lg p-3">
                     <h4 className="text-sm text-zinc-300 font-semibold mb-3">Stats Card</h4>
@@ -560,7 +895,7 @@ const RightPane: React.FC<RightPaneProps> = ({
                   </div>
                 )}
 
-                {/* Progress Bar Properties */}
+                {/* PROGRESS BAR PROPERTIES */}
                 {selectedElement.type === "progressBar" && (
                   <div className="bg-zinc-800/50 rounded-lg p-3">
                     <h4 className="text-sm text-zinc-300 font-semibold mb-3">Progress Bar</h4>
@@ -604,9 +939,9 @@ const RightPane: React.FC<RightPaneProps> = ({
                   </div>
                 )}
 
-                {/* Language Bar Properties */}
+                {/* LANGUAGE BAR PROPERTIES */}
                 {selectedElement.type === "languageBar" && (
-                  <div className="bg-zinc-800/50 rounded-lg p-3">
+                  <div className="bg-zinc-800/50 rounded-lg p-3 max-h-96 overflow-y-auto">
                     <h4 className="text-sm text-zinc-300 font-semibold mb-3">Languages</h4>
 
                     {selectedElement.languages?.map((lang, idx) => (
@@ -654,8 +989,62 @@ const RightPane: React.FC<RightPaneProps> = ({
                   </div>
                 )}
 
-                {/* Render other component properties (image, shape, trophy, badge, table, contribution graph) */}
-                {/* ... (keeping previous implementations for brevity, but they're all still there) ... */}
+                {/* ICON PROPERTIES */}
+                {selectedElement.type === "icon" && (
+                  <div className="bg-zinc-800/50 rounded-lg p-3">
+                    <h4 className="text-sm text-zinc-300 font-semibold mb-3">Icon Properties</h4>
+
+                    <PropertyInput
+                      label="Icon/Emoji"
+                      value={selectedElement.content || "⭐"}
+                      onChange={(val) => handleChange("content", val)}
+                      type="text"
+                    />
+
+                    <PropertyInput
+                      label="Size"
+                      value={selectedElement.fontSize || 48}
+                      onChange={(val) => handleChange("fontSize", val)}
+                      type="number"
+                      min={16}
+                      max={200}
+                    />
+
+                    <PropertyInput
+                      label="Color"
+                      value={selectedElement.color || "#FFD700"}
+                      onChange={(val) => handleChange("color", val)}
+                      type="color"
+                    />
+
+                    <div className="mt-2">
+                      <label className="text-xs text-zinc-400 block mb-2">Popular Icons</label>
+                      <div className="grid grid-cols-6 gap-2">
+                        {["⭐", "🏆", "💎", "🔥", "⚡", "💻", "🎯", "🚀", "💡", "🎨", "📊", "🎉"].map((icon) => (
+                          <button
+                            key={icon}
+                            onClick={() => handleChange("content", icon)}
+                            className="aspect-square rounded-lg border-2 border-zinc-700 hover:border-zinc-400 text-2xl flex items-center justify-center"
+                          >
+                            {icon}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* CONTRIBUTION GRAPH */}
+                {selectedElement.type === "contributionGraph" && (
+                  <div className="bg-zinc-800/50 rounded-lg p-3">
+                    <h4 className="text-sm text-zinc-300 font-semibold mb-3">Contribution Graph</h4>
+                    <p className="text-xs text-zinc-500">
+                      {githubUsername
+                        ? "Real contribution data fetched from GitHub"
+                        : "Using sample data. Set username to fetch real data."}
+                    </p>
+                  </div>
+                )}
 
                 {/* Delete Button */}
                 <button
@@ -690,7 +1079,7 @@ const PropertyInput: React.FC<{
         type={type}
         value={value}
         onChange={(e) => {
-          const val = type === "number" ? parseFloat(e.target.value) : e.target.value;
+          const val = type === "number" ? parseFloat(e.target.value) || 0 : e.target.value;
           onChange(val);
         }}
         min={min}

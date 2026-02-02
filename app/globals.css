@@ -1,10 +1,6 @@
 @import "tailwindcss";
 
 
-* {
-  cursor: pointer !important;
-}
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -22,6 +18,10 @@
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+}
+
+.createPageDiv {
+  cursor: default !important;
 }
 
 body {

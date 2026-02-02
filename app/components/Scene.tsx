@@ -33,7 +33,7 @@ function Card({ position, rotation, imageUrl, index }: any) {
   }, [texture]);
 
   return (
-    <group position={position} rotation={rotation}>
+    <>    <group position={position} rotation={rotation}>
       <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.1}>
         {/* Main Card Frame */}
         <mesh castShadow>
@@ -58,6 +58,8 @@ function Card({ position, rotation, imageUrl, index }: any) {
         </Text>
       </Float>
     </group>
+    </>
+
   );
 }
 

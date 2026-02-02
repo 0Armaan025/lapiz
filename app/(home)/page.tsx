@@ -15,6 +15,7 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [crack, setCrack] = useState(false);
+  const [githubUser, setGithubUser] = useState("");
   const [showScene, setShowScene] = useState(false);
 
   const [entered, setEntered] = useState(false);
@@ -25,9 +26,16 @@ const Home = () => {
   }, []);
 
   const handleClick = () => {
+
+    if (!githubUser.trim()) {
+      alert("add username");
+      return;
+    }
+
+    localStorage.setItem("github_url", githubUser.trim());
+
     if (loading) return;
     setLoading(true);
-    document.cookie = "experienceSeen=true; path=/; max-age=31536000";
     setShowGrid(true);
     setTimeout(() => {
 
@@ -72,7 +80,7 @@ const Home = () => {
   return (
 
     <>
-      <div className="relative min-h-screen overflow-hidden bg-black cursor-none">
+      <div className="relative min-h-screen overflow-hidden bg-black !cursor-none! !important cursor-none">
         <motion.div
           className="relative z-20 min-h-screen flex flex-col justify-center items-center w-full text-center"
           initial={{ opacity: 0, y: 24 }}
@@ -140,6 +148,8 @@ const Home = () => {
             <div className="mt-8 flex gap-3">
               <input
                 type="text"
+                value={githubUser}
+                onChange={(e) => setGithubUser(e.target.value)}
                 placeholder="github.com/username"
                 className="
               flex-1 bg-white/5 border border-white/10
@@ -175,7 +185,6 @@ const Home = () => {
 
       </div>
 
-      {showScene && <ExperienceScene />}
 
       {entered && (
         <motion.div
@@ -187,6 +196,8 @@ const Home = () => {
           This is where your profile lives.
         </motion.div>
       )}
+
+      {showScene && <ExperienceScene />}
     </>
   );
 };
