@@ -18,25 +18,19 @@ export class CardExporter {
     options: ExportOptions = { format: 'png', scale: 2, transparentBackground: false }
   ): Promise<Blob> {
     try {
-      // Find the actual card element
-      const actualCard = cardElement.querySelector('.card') as HTMLElement;
-      if (!actualCard) {
-        throw new Error('Card element not found. Make sure the card has class "card".');
-      }
+      // Clone the element to modify it without affecting the original
+      const clone = cardElement.cloneNode(true) as HTMLElement;
 
-      // Store original styles if we need to modify them
-      let originalBgColor: string | null = null;
-      let originalBgImage: string | null = null;
-
+      // Handle transparent background
       if (options.transparentBackground) {
-        originalBgColor = actualCard.style.backgroundColor;
-        originalBgImage = actualCard.style.backgroundImage;
-        actualCard.style.backgroundColor = 'transparent';
-        actualCard.style.backgroundImage = 'none';
+        const cardDiv = clone.querySelector('.card') as HTMLElement;
+        if (cardDiv) {
+          cardDiv.style.backgroundColor = 'transparent';
+          cardDiv.style.backgroundImage = 'none';
+        }
       }
 
-      // Capture the canvas
-      const canvas = await html2canvas(actualCard, {
+      const canvas = await html2canvas(clone, {
         backgroundColor: options.transparentBackground ? null : settings.backgroundColor,
         scale: options.scale || 2,
         width: settings.width,
@@ -44,39 +38,25 @@ export class CardExporter {
         logging: false,
         useCORS: true,
         allowTaint: true,
-        imageTimeout: 0,
-        removeContainer: false,
+        removeContainer: true,
       });
 
-      // Restore original styles
-      if (options.transparentBackground && originalBgColor !== null) {
-        actualCard.style.backgroundColor = originalBgColor;
-      }
-      if (options.transparentBackground && originalBgImage !== null) {
-        actualCard.style.backgroundImage = originalBgImage;
-      }
-
-      // Convert canvas to blob
       return new Promise((resolve, reject) => {
-        try {
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                resolve(blob);
-              } else {
-                reject(new Error('Failed to create blob from canvas. Canvas might be empty.'));
-              }
-            },
-            options.format === 'jpeg' ? 'image/jpeg' : 'image/png',
-            options.quality || 1.0
-          );
-        } catch (err) {
-          reject(new Error(`Blob creation failed: ${err}`));
-        }
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to create blob'));
+            }
+          },
+          options.format === 'jpeg' ? 'image/jpeg' : 'image/png',
+          options.quality || 1.0
+        );
       });
     } catch (error) {
       console.error('Error exporting as PNG:', error);
-      throw new Error(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error;
     }
   }
 
@@ -93,7 +73,7 @@ export class CardExporter {
       return new Blob([svgContent], { type: 'image/svg+xml' });
     } catch (error) {
       console.error('Error exporting as SVG:', error);
-      throw new Error(`SVG export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error;
     }
   }
 
@@ -117,9 +97,6 @@ export class CardExporter {
         stroke="${settings.borderColor}" 
         stroke-width="${settings.borderWidth}"/>
   <!-- Card content would be rendered here as SVG elements -->
-  <text x="${settings.width / 2}" y="${settings.height / 2}" text-anchor="middle" fill="#ffffff" font-size="16">
-    SVG export - Full rendering coming soon
-  </text>
 </svg>`;
   }
 
@@ -134,9 +111,7 @@ export class CardExporter {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    // Clean up after a short delay
-    setTimeout(() => URL.revokeObjectURL(url), 100);
+    URL.revokeObjectURL(url);
   }
 
   /**
@@ -232,15 +207,10 @@ export class CardExporter {
     try {
       const text = await file.text();
       const config = JSON.parse(text);
-
-      if (!config.elements || !config.settings) {
-        throw new Error('Invalid config file format');
-      }
-
       return {
         elements: config.elements,
         settings: config.settings,
-        username: config.username || '',
+        username: config.username,
       };
     } catch (error) {
       console.error('Error importing config:', error);

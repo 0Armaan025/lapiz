@@ -1,16 +1,11 @@
-
-
-
-
-
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Card from "../components/Card";
 import Header from "../components/Header";
 import LeftPane from "../components/LeftPane";
 import RightPane from "../components/RightPane";
+import ExportModal from "../lib/ExportModal";
 import { githubService } from "../lib/githubService";
-import { cardExporter } from "../lib/cardExporter";
 
 export interface CardElement {
   id: number;
@@ -81,8 +76,6 @@ const Create = () => {
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
-  const [exportLoading, setExportLoading] = useState(false);
-  const [exportedImageUrl, setExportedImageUrl] = useState<string>("");
   const [cardSettings, setCardSettings] = useState<CardSettings>({
     backgroundColor: "#1a1a2e",
     borderColor: "#3b82f6",
@@ -139,15 +132,6 @@ const Create = () => {
       setGithubToken(savedToken);
       githubService.setToken(savedToken);
     }
-
-    // Suppress hydration warnings
-    if (typeof window !== 'undefined') {
-      const style = document.createElement('style');
-      style.textContent = `
-        body { -webkit-font-smoothing: antialiased; }
-      `;
-      document.head.appendChild(style);
-    }
   }, []);
 
   // Save to localStorage
@@ -174,14 +158,13 @@ const Create = () => {
       setGithubUsername(username);
       localStorage.setItem("github_url", url);
       setShowUsernameModal(false);
-
-      // Auto-fetch all stats for existing elements
       fetchAllStatsForElements(username);
     }
   };
 
   const handleTokenSubmit = () => {
     githubService.setToken(githubToken);
+    localStorage.setItem("github_token", githubToken);
     setShowTokenInput(false);
   };
 
@@ -189,115 +172,58 @@ const Create = () => {
     if (!username) return;
 
     try {
-      // Fetch all stats in one go
       const [stats, languages, contributions] = await Promise.all([
         githubService.getAllStats(username),
         githubService.getLanguageStats(username),
         githubService.getContributionData(username),
       ]);
 
-      // Update all elements with the fetched data
-      setCardElements(prev => prev.map(el => {
-        if (el.type === "text" && el.githubStat && el.githubStat !== "none") {
-          const statMap: { [key: string]: string } = {
-            "Total Stars": githubService.formatNumber(stats.totalStars),
-            "Total Commits": githubService.formatNumber(stats.totalCommits),
-            "Total PRs": stats.totalPRs.toString(),
-            "Total Issues": stats.totalIssues.toString(),
-            "Contributed to": stats.contributedTo.toString(),
-            "Public Repositories": stats.publicRepos.toString(),
-            "Followers": stats.followers.toString(),
-            "Following": stats.following.toString(),
-          };
-          return { ...el, content: statMap[el.githubStat] || el.content };
-        } else if (el.type === "statsCard") {
-          return { ...el, statValue: githubService.formatNumber(stats.totalStars) };
-        } else if (el.type === "languageBar") {
-          return { ...el, languages };
-        } else if (el.type === "contributionGraph") {
-          // Convert contribution data to grid format
-          const grid: number[][] = [];
-          for (let week = 0; week < 52; week++) {
-            const weekData: number[] = [];
-            for (let day = 0; day < 7; day++) {
-              const index = week * 7 + day;
-              if (index < contributions.length) {
-                weekData.push(contributions[index].level);
-              } else {
-                weekData.push(0);
+      setCardElements((prev) =>
+        prev.map((el) => {
+          if (el.type === "text" && el.githubStat && el.githubStat !== "none") {
+            const statMap: { [key: string]: string } = {
+              "Total Stars": githubService.formatNumber(stats.totalStars),
+              "Total Commits": githubService.formatNumber(stats.totalCommits),
+              "Total PRs": stats.totalPRs.toString(),
+              "Total Issues": stats.totalIssues.toString(),
+              "Contributed to": stats.contributedTo.toString(),
+              "Public Repositories": stats.publicRepos.toString(),
+              Followers: stats.followers.toString(),
+              Following: stats.following.toString(),
+            };
+            return { ...el, content: statMap[el.githubStat] || el.content };
+          } else if (el.type === "statsCard") {
+            return { ...el, statValue: githubService.formatNumber(stats.totalStars) };
+          } else if (el.type === "languageBar") {
+            return { ...el, languages };
+          } else if (el.type === "contributionGraph") {
+            const grid: number[][] = [];
+            for (let week = 0; week < 52; week++) {
+              const weekData: number[] = [];
+              for (let day = 0; day < 7; day++) {
+                const index = week * 7 + day;
+                if (index < contributions.length) {
+                  weekData.push(contributions[index].level);
+                } else {
+                  weekData.push(0);
+                }
               }
+              grid.push(weekData);
             }
-            grid.push(weekData);
+            return { ...el, contributionData: grid };
+          } else if (el.type === "image" && el.imageType === "github-profile") {
+            return { ...el, src: `https://github.com/${username}.png` };
           }
-          return { ...el, contributionData: grid };
-        } else if (el.type === "image" && el.imageType === "github-profile") {
-          return { ...el, src: `https://github.com/${username}.png` };
-        }
-        return el;
-      }));
+          return el;
+        })
+      );
     } catch (error) {
       console.error("Error fetching stats:", error);
       alert("Failed to fetch GitHub stats. Please check your username and token.");
     }
   };
 
-  const handleExportCard = async () => {
-    if (!cardRef.current) return;
-
-    setExportLoading(true);
-    try {
-      const cardElement = cardRef.current.querySelector('.card') as HTMLElement;
-      if (!cardElement) throw new Error('Card element not found');
-
-      const blob = await cardExporter.exportAsPNG(cardElement, cardSettings);
-      const url = URL.createObjectURL(blob);
-      setExportedImageUrl(url);
-      setShowExportModal(true);
-    } catch (error) {
-      console.error("Error exporting card:", error);
-      alert("Failed to export card. Please try again.");
-    } finally {
-      setExportLoading(false);
-    }
-  };
-
-  const handleDownloadImage = () => {
-    if (!exportedImageUrl) return;
-
-    fetch(exportedImageUrl)
-      .then(res => res.blob())
-      .then(blob => {
-        cardExporter.downloadBlob(blob, `github-card-${githubUsername || 'export'}.png`);
-      });
-  };
-
-  const handleCopyImage = async () => {
-    if (!exportedImageUrl) return;
-
-    try {
-      const blob = await fetch(exportedImageUrl).then(res => res.blob());
-      const success = await cardExporter.copyImageToClipboard(blob);
-      if (success) {
-        alert("Image copied to clipboard!");
-      } else {
-        alert("Failed to copy image. Your browser may not support this feature.");
-      }
-    } catch (error) {
-      console.error("Error copying image:", error);
-      alert("Failed to copy image.");
-    }
-  };
-
-  const generateReadmeCode = (): string => {
-    // In production, this would be a hosted URL
-    const imageUrl = `https://your-app.com/api/card/${githubUsername}`;
-    const profileUrl = `https://github.com/${githubUsername}`;
-
-    //    return cardExporter.generateReadmeHTML(imageUrl, githubUsername, profileUrl);
-    return "Hey there user, this does NOT work yet :sob:";
-  };
-
-
+  // Element creation functions
   const addTextToCard = () => {
     const newElement: CardElement = {
       id: Date.now(),
@@ -328,7 +254,9 @@ const Create = () => {
       width: 150,
       height: 150,
       rotation: 0,
-      src: githubUsername ? `https://github.com/${githubUsername}.png` : "https://via.placeholder.com/150",
+      src: githubUsername
+        ? `https://github.com/${githubUsername}.png`
+        : "https://via.placeholder.com/150",
       opacity: 1,
       imageType: githubUsername ? "github-profile" : "custom",
       borderRadius: 8,
@@ -351,6 +279,7 @@ const Create = () => {
       strokeColor: "#1e40af",
       strokeWidth: 2,
       shapeType: "rectangle",
+      opacity: 1,
     };
     setCardElements((prev) => [...prev, newElement]);
     setSelectedElementId(newElement.id);
@@ -530,9 +459,7 @@ const Create = () => {
   };
 
   const updateCardElement = (id: number, data: Partial<CardElement>) => {
-    setCardElements((prev) =>
-      prev.map((el) => (el.id === id ? { ...el, ...data } : el))
-    );
+    setCardElements((prev) => prev.map((el) => (el.id === id ? { ...el, ...data } : el)));
   };
 
   const deleteSelectedElement = () => {
@@ -568,21 +495,24 @@ const Create = () => {
   const selectedElement = cardElements.find((el) => el.id === selectedElementId);
 
   return (
-    <div className="createPageDiv min-h-screen bg-[#0a0a0a] !cursor-default!" suppressHydrationWarning>
+    <div
+      className="createPageDiv min-h-screen bg-[#0a0a0a] !cursor-default"
+      suppressHydrationWarning
+    >
       <Header />
 
       {/* Top Action Bar */}
       <div className="fixed top-16 right-4 z-50 flex gap-2">
         <button
           onClick={() => setShowUsernameModal(true)}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg"
+          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg hover:shadow-purple-600/30"
         >
           👤 {githubUsername || "Set Username"}
         </button>
 
         <button
           onClick={() => setShowTokenInput(!showTokenInput)}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg"
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg hover:shadow-green-600/30"
         >
           🔑 Token
         </button>
@@ -590,18 +520,17 @@ const Create = () => {
         {githubUsername && (
           <button
             onClick={() => fetchAllStatsForElements(githubUsername)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg hover:shadow-blue-600/30"
           >
             🔄 Refresh Stats
           </button>
         )}
 
         <button
-          onClick={handleExportCard}
-          disabled={exportLoading}
-          className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg disabled:opacity-50"
+          onClick={() => setShowExportModal(true)}
+          className="bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg hover:shadow-orange-600/30"
         >
-          {exportLoading ? "Exporting..." : "📥 Export"}
+          📥 Export
         </button>
       </div>
 
@@ -649,7 +578,7 @@ const Create = () => {
               placeholder="https://github.com/username or username"
               defaultValue={githubUsername ? `https://github.com/${githubUsername}` : ""}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   handleUsernameSubmit(e.currentTarget.value);
                 }
               }}
@@ -659,7 +588,8 @@ const Create = () => {
             <div className="flex gap-3">
               <button
                 onClick={(e) => {
-                  const input = (e.target as HTMLElement).previousElementSibling?.previousElementSibling as HTMLInputElement;
+                  const input = (e.target as HTMLElement).previousElementSibling
+                    ?.previousElementSibling as HTMLInputElement;
                   if (input) handleUsernameSubmit(input.value);
                 }}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
@@ -678,69 +608,14 @@ const Create = () => {
       )}
 
       {/* Export Modal */}
-      {showExportModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 rounded-xl p-6 shadow-2xl border border-zinc-700 w-[600px] max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-white mb-4">Export Card</h2>
-
-            {/* Preview */}
-            {exportedImageUrl && (
-              <div className="mb-4 border border-zinc-700 rounded-lg overflow-hidden">
-                <img src={exportedImageUrl} alt="Exported card" className="w-full" />
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <button
-                onClick={handleDownloadImage}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium"
-              >
-                💾 Download PNG
-              </button>
-              <button
-                onClick={handleCopyImage}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium"
-              >
-                📋 Copy Image
-              </button>
-            </div>
-
-            {/* README Code */}
-            <div className="mb-4">
-              <h3 className="text-white font-semibold mb-2">README Code</h3>
-              <p className="text-zinc-400 text-xs mb-2">
-                Copy this code to add the card to your GitHub README
-              </p>
-              <div className="bg-zinc-800 rounded-lg p-3 border border-zinc-700">
-                <code className="text-xs text-green-400 break-all">
-                  {generateReadmeCode()}
-                </code>
-              </div>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(generateReadmeCode());
-                  alert("Code copied to clipboard!");
-                }}
-                className="w-full mt-2 bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-2 rounded text-sm"
-              >
-                📋 Copy Code
-              </button>
-            </div>
-
-            <button
-              onClick={() => {
-                setShowExportModal(false);
-                URL.revokeObjectURL(exportedImageUrl);
-                setExportedImageUrl("");
-              }}
-              className="w-full bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded-lg font-medium"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        cardRef={cardRef}
+        cardSettings={cardSettings}
+        cardElements={cardElements}
+        githubUsername={githubUsername}
+      />
 
       <div className="creativityArea justify-between flex flex-row items-start" ref={cardRef}>
         <LeftPane
