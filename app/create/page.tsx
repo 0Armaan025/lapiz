@@ -568,7 +568,8 @@ const Create = () => {
   const selectedElement = cardElements.find((el) => el.id === selectedElementId);
 
   return (
-    <div className="createPageDiv min-h-screen bg-[#0a0a0a] !cursor-default!" suppressHydrationWarning>
+    <div className="createPageDiv min-h-screen bg-[#0a0a0a] cursor-default !important" suppressHydrationWarning style={{ pointer: "default" }}
+    >
       <Header />
 
       {/* Top Action Bar */}
@@ -606,141 +607,147 @@ const Create = () => {
       </div>
 
       {/* Token Input Dropdown */}
-      {showTokenInput && (
-        <div className="fixed top-28 right-4 z-50 bg-zinc-900 rounded-lg p-4 shadow-2xl border border-zinc-700 w-80">
-          <h3 className="text-white font-semibold mb-2">GitHub Token</h3>
-          <p className="text-zinc-400 text-xs mb-3">
-            For better rate limits and real contribution data
-          </p>
-          <input
-            type="password"
-            value={githubToken}
-            onChange={(e) => setGithubToken(e.target.value)}
-            placeholder="ghp_xxxxxxxxxxxxx"
-            className="w-full bg-zinc-800 text-white px-3 py-2 rounded border border-zinc-600 focus:border-blue-500 focus:outline-none text-sm mb-3"
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={handleTokenSubmit}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm"
-            >
-              Save
-            </button>
-            <button
-              onClick={() => setShowTokenInput(false)}
-              className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-2 rounded text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Username Modal */}
-      {showUsernameModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 rounded-xl p-6 shadow-2xl border border-zinc-700 w-96">
-            <h2 className="text-2xl font-bold text-white mb-4">Set GitHub Username</h2>
-            <p className="text-zinc-400 text-sm mb-4">
-              Enter your GitHub profile URL or username
+      {
+        showTokenInput && (
+          <div className="fixed top-28 right-4 z-50 bg-zinc-900 rounded-lg p-4 shadow-2xl border border-zinc-700 w-80">
+            <h3 className="text-white font-semibold mb-2">GitHub Token</h3>
+            <p className="text-zinc-400 text-xs mb-3">
+              For better rate limits and real contribution data
             </p>
             <input
-              type="text"
-              placeholder="https://github.com/username or username"
-              defaultValue={githubUsername ? `https://github.com/${githubUsername}` : ""}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleUsernameSubmit(e.currentTarget.value);
-                }
-              }}
-              className="w-full bg-zinc-800 text-white px-4 py-3 rounded-lg border border-zinc-600 focus:border-blue-500 focus:outline-none mb-4"
-              autoFocus
+              type="password"
+              value={githubToken}
+              onChange={(e) => setGithubToken(e.target.value)}
+              placeholder="ghp_xxxxxxxxxxxxx"
+              className="w-full bg-zinc-800 text-white px-3 py-2 rounded border border-zinc-600 focus:border-blue-500 focus:outline-none text-sm mb-3"
             />
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <button
-                onClick={(e) => {
-                  const input = (e.target as HTMLElement).previousElementSibling?.previousElementSibling as HTMLInputElement;
-                  if (input) handleUsernameSubmit(input.value);
-                }}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+                onClick={handleTokenSubmit}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm"
               >
                 Save
               </button>
               <button
-                onClick={() => setShowUsernameModal(false)}
-                className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded-lg font-medium"
+                onClick={() => setShowTokenInput(false)}
+                className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-2 rounded text-sm"
               >
                 Cancel
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
+
+      {/* Username Modal */}
+      {
+        showUsernameModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-zinc-900 rounded-xl p-6 shadow-2xl border border-zinc-700 w-96">
+              <h2 className="text-2xl font-bold text-white mb-4">Set GitHub Username</h2>
+              <p className="text-zinc-400 text-sm mb-4">
+                Enter your GitHub profile URL or username
+              </p>
+              <input
+                type="text"
+                placeholder="https://github.com/username or username"
+                defaultValue={githubUsername ? `https://github.com/${githubUsername}` : ""}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleUsernameSubmit(e.currentTarget.value);
+                  }
+                }}
+                className="w-full bg-zinc-800 text-white px-4 py-3 rounded-lg border border-zinc-600 focus:border-blue-500 focus:outline-none mb-4"
+                autoFocus
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={(e) => {
+                    const input = (e.target as HTMLElement).previousElementSibling?.previousElementSibling as HTMLInputElement;
+                    if (input) handleUsernameSubmit(input.value);
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setShowUsernameModal(false)}
+                  className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded-lg font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
 
       {/* Export Modal */}
-      {showExportModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 rounded-xl p-6 shadow-2xl border border-zinc-700 w-[600px] max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-white mb-4">Export Card</h2>
+      {
+        showExportModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-zinc-900 rounded-xl p-6 shadow-2xl border border-zinc-700 w-[600px] max-h-[90vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold text-white mb-4">Export Card</h2>
 
-            {/* Preview */}
-            {exportedImageUrl && (
-              <div className="mb-4 border border-zinc-700 rounded-lg overflow-hidden">
-                <img src={exportedImageUrl} alt="Exported card" className="w-full" />
+              {/* Preview */}
+              {exportedImageUrl && (
+                <div className="mb-4 border border-zinc-700 rounded-lg overflow-hidden">
+                  <img src={exportedImageUrl} alt="Exported card" className="w-full" />
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <button
+                  onClick={handleDownloadImage}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium"
+                >
+                  💾 Download PNG
+                </button>
+                <button
+                  onClick={handleCopyImage}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium"
+                >
+                  📋 Copy Image
+                </button>
               </div>
-            )}
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <button
-                onClick={handleDownloadImage}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium"
-              >
-                💾 Download PNG
-              </button>
-              <button
-                onClick={handleCopyImage}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium"
-              >
-                📋 Copy Image
-              </button>
-            </div>
-
-            {/* README Code */}
-            <div className="mb-4">
-              <h3 className="text-white font-semibold mb-2">README Code</h3>
-              <p className="text-zinc-400 text-xs mb-2">
-                Copy this code to add the card to your GitHub README
-              </p>
-              <div className="bg-zinc-800 rounded-lg p-3 border border-zinc-700">
-                <code className="text-xs text-green-400 break-all">
-                  {generateReadmeCode()}
-                </code>
+              {/* README Code */}
+              <div className="mb-4">
+                <h3 className="text-white font-semibold mb-2">README Code</h3>
+                <p className="text-zinc-400 text-xs mb-2">
+                  Copy this code to add the card to your GitHub README
+                </p>
+                <div className="bg-zinc-800 rounded-lg p-3 border border-zinc-700">
+                  <code className="text-xs text-green-400 break-all">
+                    {generateReadmeCode()}
+                  </code>
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(generateReadmeCode());
+                    alert("Code copied to clipboard!");
+                  }}
+                  className="w-full mt-2 bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-2 rounded text-sm"
+                >
+                  📋 Copy Code
+                </button>
               </div>
+
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(generateReadmeCode());
-                  alert("Code copied to clipboard!");
+                  setShowExportModal(false);
+                  URL.revokeObjectURL(exportedImageUrl);
+                  setExportedImageUrl("");
                 }}
-                className="w-full mt-2 bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-2 rounded text-sm"
+                className="w-full bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded-lg font-medium"
               >
-                📋 Copy Code
+                Close
               </button>
             </div>
-
-            <button
-              onClick={() => {
-                setShowExportModal(false);
-                URL.revokeObjectURL(exportedImageUrl);
-                setExportedImageUrl("");
-              }}
-              className="w-full bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded-lg font-medium"
-            >
-              Close
-            </button>
           </div>
-        </div>
-      )}
+        )
+      }
 
       <div className="creativityArea justify-between flex flex-row items-start" ref={cardRef}>
         <LeftPane
@@ -775,7 +782,7 @@ const Create = () => {
           githubUsername={githubUsername}
         />
       </div>
-    </div>
+    </div >
   );
 };
 
