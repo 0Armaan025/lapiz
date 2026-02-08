@@ -14,6 +14,9 @@ interface LeftPaneProps {
   onAddLanguageBar: () => void;
   onAddContributionGraph: () => void;
   onAddIcon: () => void;
+  onAddQRCode: () => void;
+  onAddChart: () => void;
+  onAddSocialBadge: () => void;
   onClearAll: () => void;
 }
 
@@ -29,6 +32,9 @@ const LeftPane: React.FC<LeftPaneProps> = ({
   onAddLanguageBar,
   onAddContributionGraph,
   onAddIcon,
+  onAddQRCode,
+  onAddChart,
+  onAddSocialBadge,
   onClearAll,
 }) => {
   const [width, setWidth] = useState(320);
@@ -60,6 +66,9 @@ const LeftPane: React.FC<LeftPaneProps> = ({
     if (action === "add_language_bar") onAddLanguageBar();
     if (action === "add_contribution_graph") onAddContributionGraph();
     if (action === "add_icon") onAddIcon();
+    if (action === "add_qr_code") onAddQRCode();
+    if (action === "add_chart") onAddChart();
+    if (action === "add_social_badge") onAddSocialBadge();
   };
 
   const BASIC_COMPONENTS = [
@@ -80,6 +89,12 @@ const LeftPane: React.FC<LeftPaneProps> = ({
     { label: "Trophy", action: "add_trophy", icon: "🏆" },
     { label: "Badge", action: "add_badge", icon: "🏷️" },
     { label: "Table", action: "add_table", icon: "📋" },
+  ];
+
+  const ADVANCED_COMPONENTS = [
+    { label: "QR Code", action: "add_qr_code", icon: "📱" },
+    { label: "Chart", action: "add_chart", icon: "📉" },
+    { label: "Social Badge", action: "add_social_badge", icon: "🔗" },
   ];
 
   return (
@@ -130,6 +145,20 @@ const LeftPane: React.FC<LeftPaneProps> = ({
           <h4 className="text-sm text-zinc-400 uppercase tracking-wide mb-2">Decorations</h4>
           <div className="flex flex-col gap-2">
             {DECORATION_COMPONENTS.map((btn) => (
+              <PaneButton
+                key={btn.action}
+                label={`${btn.icon} ${btn.label}`}
+                onClick={() => handlePaneAction(btn.action)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Advanced Components */}
+        <div className="w-full mb-4">
+          <h4 className="text-sm text-zinc-400 uppercase tracking-wide mb-2">Advanced</h4>
+          <div className="flex flex-col gap-2">
+            {ADVANCED_COMPONENTS.map((btn) => (
               <PaneButton
                 key={btn.action}
                 label={`${btn.icon} ${btn.label}`}

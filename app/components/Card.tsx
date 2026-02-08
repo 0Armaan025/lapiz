@@ -1,5 +1,7 @@
 import { Rnd } from "react-rnd";
 import { CardElement, CardSettings } from "../create/page";
+import QRCode from "qrcode";
+import { useEffect, useState } from "react";
 
 interface CardProps {
   elements: CardElement[];
@@ -17,6 +19,29 @@ const Card: React.FC<CardProps> = ({
   onSelectElement,
   settings,
 }) => {
+  const [qrCodeCache, setQrCodeCache] = useState<{ [key: number]: string }>({});
+
+  // Generate QR codes for qrCode elements
+  useEffect(() => {
+    elements.forEach(async (el) => {
+      if (el.type === "qrCode" && el.qrCodeData && !qrCodeCache[el.id]) {
+        try {
+          const url = await QRCode.toDataURL(el.qrCodeData, {
+            color: {
+              dark: el.qrCodeColor || "#000000",
+              light: el.qrCodeBgColor || "#ffffff",
+            },
+            width: 500,
+            margin: 1,
+          });
+          setQrCodeCache((prev) => ({ ...prev, [el.id]: url }));
+        } catch (err) {
+          console.error("QR Code generation error:", err);
+        }
+      }
+    });
+  }, [elements, qrCodeCache]);
+
   const renderElement = (el: CardElement) => {
     switch (el.type) {
       case "text":
@@ -354,6 +379,42 @@ const Card: React.FC<CardProps> = ({
           </div>
         );
 
+      case "qrCode":
+        return (
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: el.qrCodeBgColor || "#ffffff",
+              borderRadius: "8px",
+              padding: "8px",
+            }}
+          >
+            {qrCodeCache[el.id] ? (
+              <img
+                src={qrCodeCache[el.id]}
+                alt="QR Code"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                }}
+              />
+            ) : (
+              <div style={{ color: "#666", fontSize: "12px" }}>Generating QR...</div>
+            )}
+          </div>
+        );
+
+      case "chart":
+        return renderChart(el);
+
+      case "socialBadge":
+        return renderSocialBadge(el);
+
       default:
         return null;
     }
@@ -435,6 +496,238 @@ const Card: React.FC<CardProps> = ({
           />
         );
     }
+  };
+
+  const renderChart = (el: CardElement) => {
+    if (!el.chartData || el.chartData.length === 0) {
+      return (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: el.color || "#666",
+          }}
+        >
+          No data
+        </div>
+      );
+    }
+
+    const maxValue = Math.max(...el.chartData.map((d) => d.value));
+
+    if (el.chartType === "bar") {
+      return (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            padding: "12px",
+          }}
+        >
+          {el.chartTitle && (
+            <div
+              style={{
+                fontSize: `${(el.fontSize || 12) + 2}px`,
+                fontWeight: "600",
+                color: el.color,
+              }}
+            >
+              {el.chartTitle}
+            </div>
+          )}
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "flex-end",
+              gap: "8px",
+            }}
+          >
+            {el.chartData.map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    height: `${(item.value / maxValue) * 100}%`,
+                    backgroundColor: item.color,
+                    borderRadius: "4px 4px 0 0",
+                    minHeight: "4px",
+                  }}
+                />
+                <div
+                  style={{
+                    fontSize: `${el.fontSize || 12}px`,
+                    color: el.color,
+                    textAlign: "center",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {item.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    } else if (el.chartType === "pie") {
+      const total = el.chartData.reduce((sum, item) => sum + item.value, 0);
+      let currentAngle = 0;
+
+      return (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            padding: "12px",
+          }}
+        >
+          {el.chartTitle && (
+            <div
+              style={{
+                fontSize: `${(el.fontSize || 12) + 2}px`,
+                fontWeight: "600",
+                color: el.color,
+              }}
+            >
+              {el.chartTitle}
+            </div>
+          )}
+          <div style={{ flex: 1, display: "flex", gap: "12px", alignItems: "center" }}>
+            <svg viewBox="0 0 100 100" style={{ width: "50%", height: "100%" }}>
+              {el.chartData.map((item, idx) => {
+                const percentage = (item.value / total) * 100;
+                const angle = (percentage / 100) * 360;
+                const startAngle = currentAngle;
+                const endAngle = currentAngle + angle;
+                currentAngle = endAngle;
+
+                const startRad = (startAngle - 90) * (Math.PI / 180);
+                const endRad = (endAngle - 90) * (Math.PI / 180);
+                const x1 = 50 + 40 * Math.cos(startRad);
+                const y1 = 50 + 40 * Math.sin(startRad);
+                const x2 = 50 + 40 * Math.cos(endRad);
+                const y2 = 50 + 40 * Math.sin(endRad);
+                const largeArc = angle > 180 ? 1 : 0;
+
+                return (
+                  <path
+                    key={idx}
+                    d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
+                    fill={item.color}
+                  />
+                );
+              })}
+            </svg>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+              {el.chartData.map((item, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: `${el.fontSize || 12}px`,
+                    color: el.color,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "12px",
+                      height: "12px",
+                      backgroundColor: item.color,
+                      borderRadius: "2px",
+                    }}
+                  />
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const renderSocialBadge = (el: CardElement) => {
+    const platformIcons: { [key: string]: string } = {
+      github: "⚡",
+      twitter: "🐦",
+      linkedin: "💼",
+      youtube: "📺",
+      instagram: "📷",
+      discord: "💬",
+    };
+
+    const platformColors: { [key: string]: string } = {
+      github: "#24292e",
+      twitter: "#1DA1F2",
+      linkedin: "#0A66C2",
+      youtube: "#FF0000",
+      instagram: "#E4405F",
+      discord: "#5865F2",
+    };
+
+    return (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          backgroundColor: el.socialColor || platformColors[el.socialPlatform || "github"],
+          borderRadius: "8px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px",
+          padding: "8px 16px",
+        }}
+      >
+        <span style={{ fontSize: "24px" }}>
+          {platformIcons[el.socialPlatform || "github"]}
+        </span>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span
+            style={{
+              fontSize: `${(el.fontSize || 14) - 2}px`,
+              color: el.color,
+              opacity: 0.8,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            {el.socialPlatform}
+          </span>
+          <span
+            style={{
+              fontSize: `${el.fontSize}px`,
+              fontWeight: el.fontWeight,
+              color: el.color,
+            }}
+          >
+            @{el.socialUsername}
+          </span>
+        </div>
+      </div>
+    );
   };
 
   return (

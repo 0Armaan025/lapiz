@@ -54,6 +54,18 @@ export interface CardElement {
   languages?: { name: string; percentage: number; color: string }[];
   contributionData?: number[][];
   contributionColors?: string[];
+  // QR Code properties
+  qrCodeData?: string;
+  qrCodeColor?: string;
+  qrCodeBgColor?: string;
+  // Chart properties
+  chartType?: string;
+  chartData?: { label: string; value: number; color: string }[];
+  chartTitle?: string;
+  // Social Badge properties
+  socialPlatform?: string;
+  socialUsername?: string;
+  socialColor?: string;
 }
 
 export interface CardSettings {
@@ -458,6 +470,69 @@ const Create = () => {
     setSelectedElementId(newElement.id);
   };
 
+  const addQRCodeToCard = () => {
+    const newElement: CardElement = {
+      id: Date.now(),
+      type: "qrCode",
+      x: 100,
+      y: 100,
+      width: 150,
+      height: 150,
+      rotation: 0,
+      qrCodeData: githubUsername
+        ? `https://github.com/${githubUsername}`
+        : "https://github.com",
+      qrCodeColor: "#000000",
+      qrCodeBgColor: "#ffffff",
+    };
+    setCardElements((prev) => [...prev, newElement]);
+    setSelectedElementId(newElement.id);
+  };
+
+  const addChartToCard = () => {
+    const newElement: CardElement = {
+      id: Date.now(),
+      type: "chart",
+      x: 50,
+      y: 50,
+      width: 300,
+      height: 200,
+      rotation: 0,
+      chartType: "bar",
+      chartTitle: "My Stats",
+      chartData: [
+        { label: "Commits", value: 150, color: "#3b82f6" },
+        { label: "PRs", value: 45, color: "#10b981" },
+        { label: "Issues", value: 20, color: "#f59e0b" },
+        { label: "Stars", value: 80, color: "#ec4899" },
+      ],
+      color: "#ffffff",
+      fontSize: 12,
+    };
+    setCardElements((prev) => [...prev, newElement]);
+    setSelectedElementId(newElement.id);
+  };
+
+  const addSocialBadgeToCard = () => {
+    const newElement: CardElement = {
+      id: Date.now(),
+      type: "socialBadge",
+      x: 100,
+      y: 100,
+      width: 180,
+      height: 50,
+      rotation: 0,
+      socialPlatform: "github",
+      socialUsername: githubUsername || "username",
+      socialColor: "#24292e",
+      color: "#ffffff",
+      fontSize: 14,
+      fontWeight: "600",
+    };
+    setCardElements((prev) => [...prev, newElement]);
+    setSelectedElementId(newElement.id);
+  };
+
   const updateCardElement = (id: number, data: Partial<CardElement>) => {
     setCardElements((prev) => prev.map((el) => (el.id === id ? { ...el, ...data } : el)));
   };
@@ -630,6 +705,9 @@ const Create = () => {
           onAddLanguageBar={addLanguageBarToCard}
           onAddContributionGraph={addContributionGraphToCard}
           onAddIcon={addIconToCard}
+          onAddQRCode={addQRCodeToCard}
+          onAddChart={addChartToCard}
+          onAddSocialBadge={addSocialBadgeToCard}
           onClearAll={clearAllElements}
         />
         <Card

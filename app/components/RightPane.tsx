@@ -122,6 +122,12 @@ const RightPane: React.FC<RightPaneProps> = ({
       handleChange("strokeColor", colors.primary);
     } else if (selectedElement.type === "progressBar") {
       handleChange("progressColor", colors.primary);
+    } else if (selectedElement.type === "icon") {
+      handleChange("color", colors.primary);
+    } else if (selectedElement.type === "qrCode") {
+      handleChange("qrCodeColor", colors.primary);
+    } else if (selectedElement.type === "socialBadge") {
+      handleChange("socialColor", colors.primary);
     }
   };
 
@@ -145,12 +151,32 @@ const RightPane: React.FC<RightPaneProps> = ({
     }
   };
 
+  const removeTableRow = () => {
+    if (selectedElement && selectedElement.tableData && selectedElement.tableData.length > 2) {
+      const newData = selectedElement.tableData.slice(0, -1);
+      onUpdateElement(selectedElement.id, {
+        tableData: newData,
+        rows: (selectedElement.rows || 1) - 1,
+      });
+    }
+  };
+
   const addTableColumn = () => {
     if (selectedElement && selectedElement.tableData) {
       const newData = selectedElement.tableData.map((row) => [...row, "New Cell"]);
       onUpdateElement(selectedElement.id, {
         tableData: newData,
         columns: (selectedElement.columns || 0) + 1,
+      });
+    }
+  };
+
+  const removeTableColumn = () => {
+    if (selectedElement && selectedElement.tableData && selectedElement.tableData[0].length > 1) {
+      const newData = selectedElement.tableData.map((row) => row.slice(0, -1));
+      onUpdateElement(selectedElement.id, {
+        tableData: newData,
+        columns: (selectedElement.columns || 1) - 1,
       });
     }
   };
@@ -206,8 +232,8 @@ const RightPane: React.FC<RightPaneProps> = ({
               <button
                 onClick={() => setActiveTab("element")}
                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 ${activeTab === "element"
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                  : "bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                    : "bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-800"
                   }`}
               >
                 🎨 Element
@@ -215,8 +241,8 @@ const RightPane: React.FC<RightPaneProps> = ({
               <button
                 onClick={() => setActiveTab("card")}
                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 ${activeTab === "card"
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                  : "bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                    : "bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-800"
                   }`}
               >
                 🖼️ Card
@@ -391,7 +417,7 @@ const RightPane: React.FC<RightPaneProps> = ({
                     )}
 
                   {/* Color Theme Presets */}
-                  {["text", "shape", "badge", "trophy", "table", "statsCard", "progressBar"].includes(
+                  {["text", "shape", "badge", "trophy", "table", "statsCard", "progressBar", "icon", "qrCode", "socialBadge"].includes(
                     selectedElement.type
                   ) && (
                       <PropertySection title="🎨 Quick Themes">
@@ -465,7 +491,9 @@ const RightPane: React.FC<RightPaneProps> = ({
                     handleChange,
                     handleTableDataChange,
                     addTableRow,
+                    removeTableRow,
                     addTableColumn,
+                    removeTableColumn,
                     handleLanguageChange,
                     addLanguage,
                     removeLanguage,
@@ -589,14 +617,25 @@ const PropertySelect: React.FC<{
   );
 };
 
-// Type-specific properties renderer
+// Type-specific properties renderer - COMPLETE VERSION
 function renderTypeSpecificProperties(
   element: CardElement,
   handlers: any
 ) {
-  const { handleChange, githubUsername } = handlers;
+  const {
+    handleChange,
+    handleTableDataChange,
+    addTableRow,
+    removeTableRow,
+    addTableColumn,
+    removeTableColumn,
+    handleLanguageChange,
+    addLanguage,
+    removeLanguage,
+    githubUsername,
+  } = handlers;
 
-  // TEXT PROPERTIES
+  // ==================== TEXT PROPERTIES ====================
   if (element.type === "text") {
     return (
       <>
@@ -669,7 +708,7 @@ function renderTypeSpecificProperties(
     );
   }
 
-  // SHAPE PROPERTIES
+  // ==================== SHAPE PROPERTIES ====================
   if (element.type === "shape") {
     return (
       <>
@@ -734,7 +773,7 @@ function renderTypeSpecificProperties(
     );
   }
 
-  // IMAGE PROPERTIES
+  // ==================== IMAGE PROPERTIES ====================
   if (element.type === "image") {
     return (
       <>
@@ -762,11 +801,13 @@ function renderTypeSpecificProperties(
               type="text"
             />
           ) : githubUsername ? (
-            <div className="text-xs text-zinc-400">
+            <div className="text-xs text-zinc-400 p-2 bg-zinc-800/50 rounded">
               Using: <span className="text-blue-400">{githubUsername}</span>
             </div>
           ) : (
-            <div className="text-xs text-yellow-400">Set GitHub username first</div>
+            <div className="text-xs text-yellow-400 p-2 bg-yellow-600/10 rounded">
+              Set GitHub username first
+            </div>
           )}
         </PropertySection>
 
@@ -819,32 +860,720 @@ function renderTypeSpecificProperties(
     );
   }
 
-  // Add more type-specific renderers here...
-  // (Trophy, Badge, Table, Stats, Progress, Languages, etc.)
-  // For brevity, I'm showing the pattern - you can expand these
+  // ==================== TROPHY PROPERTIES ====================
+  if (element.type === "trophy") {
+    return (
+      <>
+        <PropertySection title="🏆 Trophy Settings">
+          <PropertySelect
+            label="Trophy Type"
+            value={element.trophyType || "gold"}
+            onChange={(val) => handleChange("trophyType", val)}
+            options={["gold", "silver", "bronze", "platinum"]}
+          />
+          <PropertyInput
+            label="Trophy Color"
+            value={element.trophyColor || "#FFD700"}
+            onChange={(val) => handleChange("trophyColor", val)}
+            type="color"
+          />
+        </PropertySection>
+      </>
+    );
+  }
+
+  // ==================== BADGE PROPERTIES ====================
+  if (element.type === "badge") {
+    return (
+      <>
+        <PropertySection title="🏷️ Badge Content">
+          <PropertyInput
+            label="Badge Text"
+            value={element.badgeText || "NEW"}
+            onChange={(val) => handleChange("badgeText", val)}
+            type="text"
+          />
+        </PropertySection>
+
+        <PropertySection title="🎨 Badge Styling">
+          <PropertyInput
+            label="Background Color"
+            value={element.badgeColor || "#3b82f6"}
+            onChange={(val) => handleChange("badgeColor", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Text Color"
+            value={element.badgeTextColor || "#ffffff"}
+            onChange={(val) => handleChange("badgeTextColor", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Font Size"
+            value={element.fontSize || 14}
+            onChange={(val) => handleChange("fontSize", val)}
+            type="number"
+            min={8}
+            max={48}
+            unit="px"
+          />
+          <PropertySelect
+            label="Font Weight"
+            value={element.fontWeight || "bold"}
+            onChange={(val) => handleChange("fontWeight", val)}
+            options={["normal", "500", "600", "bold", "800", "900"]}
+          />
+        </PropertySection>
+      </>
+    );
+  }
+
+  // ==================== TABLE PROPERTIES ====================
+  if (element.type === "table") {
+    return (
+      <>
+        <PropertySection title="📋 Table Structure">
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={addTableRow}
+              className="flex-1 bg-green-600/20 hover:bg-green-600/30 text-green-400 py-2 px-3 rounded-lg text-xs font-medium transition-all"
+            >
+              + Row
+            </button>
+            <button
+              onClick={removeTableRow}
+              className="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 py-2 px-3 rounded-lg text-xs font-medium transition-all"
+            >
+              - Row
+            </button>
+          </div>
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={addTableColumn}
+              className="flex-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 py-2 px-3 rounded-lg text-xs font-medium transition-all"
+            >
+              + Column
+            </button>
+            <button
+              onClick={removeTableColumn}
+              className="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 py-2 px-3 rounded-lg text-xs font-medium transition-all"
+            >
+              - Column
+            </button>
+          </div>
+          <div className="text-xs text-zinc-400 p-2 bg-zinc-800/50 rounded">
+            Rows: {element.rows || 0} | Columns: {element.columns || 0}
+          </div>
+        </PropertySection>
+
+        <PropertySection title="📝 Table Data">
+          <div className="max-h-60 overflow-y-auto space-y-2">
+            {element.tableData?.map((row, rowIdx) => (
+              <div key={rowIdx}>
+                <p className="text-xs text-zinc-500 mb-1">
+                  {rowIdx === 0 ? "Header" : `Row ${rowIdx}`}
+                </p>
+                {row.map((cell, colIdx) => (
+                  <input
+                    key={colIdx}
+                    type="text"
+                    value={cell}
+                    onChange={(e) => handleTableDataChange(rowIdx, colIdx, e.target.value)}
+                    className="w-full bg-zinc-800/50 text-white px-2 py-1.5 rounded mb-1 border border-zinc-700 focus:border-blue-500 focus:outline-none text-xs"
+                    placeholder={`Cell ${rowIdx}-${colIdx}`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </PropertySection>
+
+        <PropertySection title="🎨 Table Colors">
+          <PropertyInput
+            label="Header Background"
+            value={element.headerBgColor || "#3b82f6"}
+            onChange={(val) => handleChange("headerBgColor", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Cell Background"
+            value={element.cellBgColor || "#27272a"}
+            onChange={(val) => handleChange("cellBgColor", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Text Color"
+            value={element.color || "#ffffff"}
+            onChange={(val) => handleChange("color", val)}
+            type="color"
+          />
+        </PropertySection>
+      </>
+    );
+  }
+
+  // ==================== STATS CARD PROPERTIES ====================
+  if (element.type === "statsCard") {
+    return (
+      <>
+        <PropertySection title="📊 Stats Content">
+          <PropertySelect
+            label="Stat Type"
+            value={element.statType || "commits"}
+            onChange={(val) => handleChange("statType", val)}
+            options={["commits", "stars", "repos", "prs", "issues", "followers", "custom"]}
+          />
+          <PropertyInput
+            label="Stat Value"
+            value={element.statValue || "0"}
+            onChange={(val) => handleChange("statValue", val)}
+            type="text"
+          />
+          <PropertyInput
+            label="Stat Label"
+            value={element.statLabel || "Total Commits"}
+            onChange={(val) => handleChange("statLabel", val)}
+            type="text"
+          />
+          <PropertyInput
+            label="Icon"
+            value={element.statIcon || "📊"}
+            onChange={(val) => handleChange("statIcon", val)}
+            type="text"
+          />
+        </PropertySection>
+
+        <PropertySection title="🎨 Card Styling">
+          <PropertyInput
+            label="Background Color"
+            value={element.fillColor || "#1e293b"}
+            onChange={(val) => handleChange("fillColor", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Border Color"
+            value={element.strokeColor || "#3b82f6"}
+            onChange={(val) => handleChange("strokeColor", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Border Width"
+            value={element.strokeWidth || 2}
+            onChange={(val) => handleChange("strokeWidth", val)}
+            type="number"
+            min={0}
+            max={10}
+            unit="px"
+          />
+          <PropertyInput
+            label="Border Radius"
+            value={element.borderRadius || 12}
+            onChange={(val) => handleChange("borderRadius", val)}
+            type="number"
+            min={0}
+            max={50}
+            unit="px"
+          />
+          <PropertyInput
+            label="Text Color"
+            value={element.color || "#ffffff"}
+            onChange={(val) => handleChange("color", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Value Font Size"
+            value={element.fontSize || 32}
+            onChange={(val) => handleChange("fontSize", val)}
+            type="number"
+            min={16}
+            max={72}
+            unit="px"
+          />
+        </PropertySection>
+      </>
+    );
+  }
+
+  // ==================== PROGRESS BAR PROPERTIES ====================
+  if (element.type === "progressBar") {
+    return (
+      <>
+        <PropertySection title="📈 Progress Settings">
+          <PropertyInput
+            label="Progress Value"
+            value={element.progressValue || 75}
+            onChange={(val) => handleChange("progressValue", Math.min(100, Math.max(0, val)))}
+            type="number"
+            min={0}
+            max={100}
+            unit="%"
+          />
+          <PropertyInput
+            label="Label"
+            value={element.progressLabel || "Progress"}
+            onChange={(val) => handleChange("progressLabel", val)}
+            type="text"
+          />
+        </PropertySection>
+
+        <PropertySection title="🎨 Progress Colors">
+          <PropertyInput
+            label="Progress Color"
+            value={element.progressColor || "#22c55e"}
+            onChange={(val) => handleChange("progressColor", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Background Color"
+            value={element.progressBgColor || "#374151"}
+            onChange={(val) => handleChange("progressBgColor", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Text Color"
+            value={element.color || "#ffffff"}
+            onChange={(val) => handleChange("color", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Border Radius"
+            value={element.borderRadius || 8}
+            onChange={(val) => handleChange("borderRadius", val)}
+            type="number"
+            min={0}
+            max={50}
+            unit="px"
+          />
+          <PropertyInput
+            label="Font Size"
+            value={element.fontSize || 14}
+            onChange={(val) => handleChange("fontSize", val)}
+            type="number"
+            min={8}
+            max={32}
+            unit="px"
+          />
+        </PropertySection>
+      </>
+    );
+  }
+
+  // ==================== LANGUAGE BAR PROPERTIES ====================
+  if (element.type === "languageBar") {
+    return (
+      <>
+        <PropertySection title="💻 Languages">
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {element.languages?.map((lang, idx) => (
+              <div key={idx} className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs text-zinc-400">Language {idx + 1}</span>
+                  {element.languages!.length > 1 && (
+                    <button
+                      onClick={() => removeLanguage(idx)}
+                      className="text-red-400 hover:text-red-300 text-xs"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <PropertyInput
+                  label="Name"
+                  value={lang.name}
+                  onChange={(val) => handleLanguageChange(idx, "name", val)}
+                  type="text"
+                />
+                <PropertyInput
+                  label="Percentage"
+                  value={lang.percentage}
+                  onChange={(val) => handleLanguageChange(idx, "percentage", val)}
+                  type="number"
+                  min={0}
+                  max={100}
+                  unit="%"
+                />
+                <PropertyInput
+                  label="Color"
+                  value={lang.color}
+                  onChange={(val) => handleLanguageChange(idx, "color", val)}
+                  type="color"
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={addLanguage}
+            className="w-full mt-3 bg-green-600/20 hover:bg-green-600/30 text-green-400 py-2 px-4 rounded-lg text-sm font-medium transition-all"
+          >
+            + Add Language
+          </button>
+        </PropertySection>
+
+        <PropertySection title="🎨 Display Settings">
+          <PropertyInput
+            label="Text Color"
+            value={element.color || "#ffffff"}
+            onChange={(val) => handleChange("color", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Font Size"
+            value={element.fontSize || 12}
+            onChange={(val) => handleChange("fontSize", val)}
+            type="number"
+            min={8}
+            max={24}
+            unit="px"
+          />
+        </PropertySection>
+      </>
+    );
+  }
+
+  // ==================== CONTRIBUTION GRAPH PROPERTIES ====================
+  if (element.type === "contributionGraph") {
+    return (
+      <>
+        <PropertySection title="🟩 Contribution Graph">
+          <div className="text-xs text-zinc-400 p-3 bg-zinc-800/50 rounded-lg">
+            <p className="mb-2">
+              This displays a GitHub-style contribution graph with 52 weeks × 7 days
+            </p>
+            <p className="text-zinc-500">
+              Data is automatically fetched from your GitHub profile when you set your username
+            </p>
+          </div>
+        </PropertySection>
+
+        <PropertySection title="🎨 Color Settings">
+          <div className="space-y-2">
+            <p className="text-xs text-zinc-400 mb-2">Contribution Level Colors</p>
+            {element.contributionColors?.map((color, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <span className="text-xs text-zinc-500 w-16">Level {idx}:</span>
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => {
+                    const newColors = [...(element.contributionColors || [])];
+                    newColors[idx] = e.target.value;
+                    handleChange("contributionColors", newColors);
+                  }}
+                  className="flex-1 h-8 bg-zinc-800/50 rounded border border-zinc-700"
+                />
+              </div>
+            ))}
+          </div>
+          <PropertyInput
+            label="Text Color"
+            value={element.color || "#ffffff"}
+            onChange={(val) => handleChange("color", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Font Size"
+            value={element.fontSize || 10}
+            onChange={(val) => handleChange("fontSize", val)}
+            type="number"
+            min={6}
+            max={16}
+            unit="px"
+          />
+        </PropertySection>
+      </>
+    );
+  }
+
+  // ==================== ICON PROPERTIES ====================
+  if (element.type === "icon") {
+    return (
+      <>
+        <PropertySection title="⭐ Icon Content">
+          <PropertyInput
+            label="Icon/Emoji"
+            value={element.content || "⭐"}
+            onChange={(val) => handleChange("content", val)}
+            type="text"
+          />
+          <div className="grid grid-cols-5 gap-2 mt-3">
+            {["⭐", "🔥", "💎", "🎯", "🚀", "💻", "🎨", "📱", "⚡", "🏆"].map((icon) => (
+              <button
+                key={icon}
+                onClick={() => handleChange("content", icon)}
+                className="text-2xl p-2 bg-zinc-800/50 hover:bg-zinc-700 rounded-lg transition-all"
+              >
+                {icon}
+              </button>
+            ))}
+          </div>
+        </PropertySection>
+
+        <PropertySection title="🎨 Icon Styling">
+          <PropertyInput
+            label="Size"
+            value={element.fontSize || 48}
+            onChange={(val) => handleChange("fontSize", val)}
+            type="number"
+            min={16}
+            max={200}
+            unit="px"
+          />
+          <PropertyInput
+            label="Color"
+            value={element.color || "#FFD700"}
+            onChange={(val) => handleChange("color", val)}
+            type="color"
+          />
+        </PropertySection>
+      </>
+    );
+  }
+
+  // ==================== QR CODE PROPERTIES ====================
+  if (element.type === "qrCode") {
+    return (
+      <>
+        <PropertySection title="📱 QR Code Content">
+          <PropertyInput
+            label="Data/URL"
+            value={element.qrCodeData || ""}
+            onChange={(val) => handleChange("qrCodeData", val)}
+            type="text"
+          />
+          <div className="text-xs text-zinc-400 p-2 bg-zinc-800/50 rounded mt-2">
+            Enter any text, URL, or data to encode in the QR code
+          </div>
+        </PropertySection>
+
+        <PropertySection title="🎨 QR Code Colors">
+          <PropertyInput
+            label="Foreground Color"
+            value={element.qrCodeColor || "#000000"}
+            onChange={(val) => handleChange("qrCodeColor", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Background Color"
+            value={element.qrCodeBgColor || "#ffffff"}
+            onChange={(val) => handleChange("qrCodeBgColor", val)}
+            type="color"
+          />
+        </PropertySection>
+      </>
+    );
+  }
+
+  // ==================== CHART PROPERTIES ====================
+  if (element.type === "chart") {
+    const addChartItem = () => {
+      if (element.chartData) {
+        const newData = [
+          ...element.chartData,
+          { label: "New Item", value: 50, color: "#3b82f6" },
+        ];
+        handleChange("chartData", newData);
+      }
+    };
+
+    const removeChartItem = (index: number) => {
+      if (element.chartData && element.chartData.length > 1) {
+        const newData = element.chartData.filter((_, idx) => idx !== index);
+        handleChange("chartData", newData);
+      }
+    };
+
+    const updateChartItem = (
+      index: number,
+      field: "label" | "value" | "color",
+      value: any
+    ) => {
+      if (element.chartData) {
+        const newData = element.chartData.map((item, idx) =>
+          idx === index ? { ...item, [field]: value } : item
+        );
+        handleChange("chartData", newData);
+      }
+    };
+
+    return (
+      <>
+        <PropertySection title="📉 Chart Settings">
+          <PropertySelect
+            label="Chart Type"
+            value={element.chartType || "bar"}
+            onChange={(val) => handleChange("chartType", val)}
+            options={[
+              { value: "bar", label: "Bar Chart" },
+              { value: "pie", label: "Pie Chart" },
+            ]}
+          />
+          <PropertyInput
+            label="Chart Title"
+            value={element.chartTitle || ""}
+            onChange={(val) => handleChange("chartTitle", val)}
+            type="text"
+          />
+        </PropertySection>
+
+        <PropertySection title="📊 Chart Data">
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {element.chartData?.map((item, idx) => (
+              <div key={idx} className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs text-zinc-400">Item {idx + 1}</span>
+                  {element.chartData!.length > 1 && (
+                    <button
+                      onClick={() => removeChartItem(idx)}
+                      className="text-red-400 hover:text-red-300 text-xs"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <PropertyInput
+                  label="Label"
+                  value={item.label}
+                  onChange={(val) => updateChartItem(idx, "label", val)}
+                  type="text"
+                />
+                <PropertyInput
+                  label="Value"
+                  value={item.value}
+                  onChange={(val) => updateChartItem(idx, "value", parseFloat(val) || 0)}
+                  type="number"
+                  min={0}
+                />
+                <PropertyInput
+                  label="Color"
+                  value={item.color}
+                  onChange={(val) => updateChartItem(idx, "color", val)}
+                  type="color"
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={addChartItem}
+            className="w-full mt-3 bg-green-600/20 hover:bg-green-600/30 text-green-400 py-2 px-4 rounded-lg text-sm font-medium transition-all"
+          >
+            + Add Chart Item
+          </button>
+        </PropertySection>
+
+        <PropertySection title="🎨 Chart Styling">
+          <PropertyInput
+            label="Text Color"
+            value={element.color || "#ffffff"}
+            onChange={(val) => handleChange("color", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Font Size"
+            value={element.fontSize || 12}
+            onChange={(val) => handleChange("fontSize", val)}
+            type="number"
+            min={8}
+            max={24}
+            unit="px"
+          />
+        </PropertySection>
+      </>
+    );
+  }
+
+  // ==================== SOCIAL BADGE PROPERTIES ====================
+  if (element.type === "socialBadge") {
+    return (
+      <>
+        <PropertySection title="🔗 Social Platform">
+          <PropertySelect
+            label="Platform"
+            value={element.socialPlatform || "github"}
+            onChange={(val) => {
+              handleChange("socialPlatform", val);
+              // Auto-set color based on platform
+              const colors: { [key: string]: string } = {
+                github: "#24292e",
+                twitter: "#1DA1F2",
+                linkedin: "#0A66C2",
+                youtube: "#FF0000",
+                instagram: "#E4405F",
+                discord: "#5865F2",
+              };
+              handleChange("socialColor", colors[val] || "#3b82f6");
+            }}
+            options={[
+              { value: "github", label: "GitHub" },
+              { value: "twitter", label: "Twitter/X" },
+              { value: "linkedin", label: "LinkedIn" },
+              { value: "youtube", label: "YouTube" },
+              { value: "instagram", label: "Instagram" },
+              { value: "discord", label: "Discord" },
+            ]}
+          />
+          <PropertyInput
+            label="Username"
+            value={element.socialUsername || ""}
+            onChange={(val) => handleChange("socialUsername", val)}
+            type="text"
+          />
+        </PropertySection>
+
+        <PropertySection title="🎨 Badge Styling">
+          <PropertyInput
+            label="Background Color"
+            value={element.socialColor || "#24292e"}
+            onChange={(val) => handleChange("socialColor", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Text Color"
+            value={element.color || "#ffffff"}
+            onChange={(val) => handleChange("color", val)}
+            type="color"
+          />
+          <PropertyInput
+            label="Font Size"
+            value={element.fontSize || 14}
+            onChange={(val) => handleChange("fontSize", val)}
+            type="number"
+            min={8}
+            max={24}
+            unit="px"
+          />
+          <PropertySelect
+            label="Font Weight"
+            value={element.fontWeight || "600"}
+            onChange={(val) => handleChange("fontWeight", val)}
+            options={["normal", "500", "600", "bold", "800", "900"]}
+          />
+        </PropertySection>
+      </>
+    );
+  }
 
   return null;
 }
 
 // Add custom scrollbar styles
-const style = document.createElement("style");
-style.textContent = `
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(39, 39, 42, 0.3);
-    border-radius: 3px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(63, 63, 70, 0.8);
-    border-radius: 3px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(82, 82, 91, 1);
-  }
-`;
 if (typeof document !== "undefined") {
+  const style = document.createElement("style");
+  style.textContent = `
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(39, 39, 42, 0.3);
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(63, 63, 70, 0.8);
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(82, 82, 91, 1);
+    }
+  `;
   document.head.appendChild(style);
 }
 
